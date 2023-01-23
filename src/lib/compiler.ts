@@ -8,6 +8,15 @@ function capitalizeFirstChar(str: string) {
   return `${str.charAt(0).toUpperCase() + str.slice(1)}`;
 }
 
+function getTypeLength(type: string) {
+  switch (type) {
+    case 'uint64[]':
+      return 8;
+    default:
+      throw new Error(`Unknown type ${type}`);
+  }
+}
+
 // Represents the stack types available in the AVM
 // eslint-disable-next-line no-shadow
 enum StackType {
@@ -190,6 +199,8 @@ export default class Compiler {
   private lastSourceCommentRange: [number, number] = [-1, -1];
 
   private comments: number[] = [];
+
+  private typeHint?: string;
 
   private readonly OP_PARAMS: {
     [type: string]: {name: string, type?: string, args: number, fn: () => void}[]
@@ -652,6 +663,7 @@ export default class Compiler {
       else if (ts.isPropertyAccessExpression(node)) this.processMemberExpression(node);
       else if (ts.isAsExpression(node)) this.processTSAsExpression(node);
       else if (ts.isNewExpression(node)) this.processNewExpression(node);
+      else if (ts.isArrayLiteralExpression(node)) this.processArrayLiteralExpression(node);
 
       // Vars/Consts
       else if (ts.isIdentifier(node)) this.processIdentifier(node);
@@ -691,8 +703,37 @@ export default class Compiler {
     }
   }
 
+  private processArrayLiteralExpression(node: ts.ArrayLiteralExpression) {
+    node.elements.forEach((e, i) => {
+      this.processNode(e);
+      if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('itob');
+      if (i) this.pushVoid('concat');
+    });
+
+    if (this.typeHint?.endsWith('[]')) {
+      this.pushVoid(`byte 0x${node.elements.length.toString(16).padStart(4, '0')}`);
+      this.pushVoid('swap');
+      this.pushVoid('concat');
+    }
+
+    this.lastType = this.typeHint!;
+  }
+
   private processElementAccessExpression(node: ts.ElementAccessExpression) {
-    if (!ts.isPropertyAccessExpression(node.expression)) throw new Error('Element access expression must be property access expression');
+    if (ts.isIdentifier(node.expression)) {
+      this.processNode(node.expression);
+
+      let byteOffset = getTypeLength(this.lastType)
+      * parseInt(node.argumentExpression.getText(), 10);
+
+      if (this.lastType.endsWith('[]')) byteOffset += 2;
+
+      this.pushVoid(`extract ${byteOffset} ${getTypeLength(this.lastType)}`);
+      this.lastType = this.lastType.replace('[]', '');
+      if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('btoi');
+      return;
+    }
+    if (!ts.isPropertyAccessExpression(node.expression)) throw new Error(`Element access expression must be property access expression (given ${ts.SyntaxKind[node.expression.kind]})`);
     switch (node.expression.name.getText()) {
       case 'txnGroup':
         this.processNode(node.argumentExpression);
@@ -865,7 +906,9 @@ export default class Compiler {
 
   private processVariableDeclaration(node: ts.VariableDeclarationList) {
     node.declarations.forEach((d) => {
+      this.typeHint = d.type?.getText();
       this.processNode(d);
+      this.typeHint = undefined;
     });
   }
 

@@ -4,6 +4,8 @@
 
 declare type uint64 = number
 declare type bytes = string
+declare type FixedArray<T, N extends number> = T[]
+
 declare class Asset {
   constructor(id: uint64)
 

@@ -8,9 +8,23 @@ import { Contract } from '../../src/lib/index';
 
 // eslint-disable-next-line no-unused-vars
 class AbiTest extends Contract {
-  variableArray(a: uint64, b: uint64): void {
-    const c: uint64[] = [a, b];
+  variableArray(): void {
+    const c: uint64[] = [11, 22, 33];
 
-    assert(c[0]);
+    assert(c[0] === 11);
+    assert(c[1] === 22);
+    assert(c[2] === 33);
+  }
+
+  twoDimensionalArray(): void {
+    const c: uint64[][] = [[44, 55], [66, 77]];
+
+    assert(c[1][1] === 77);
+  }
+
+  threeDimensionalArray(): void {
+    const c: uint64[][][] = [[[11, 22], [33, 44]], [[55, 66], [77, 88]]];
+
+    assert(c[1][1][1] === 88);
   }
 }

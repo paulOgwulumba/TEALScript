@@ -10,7 +10,7 @@ function capitalizeFirstChar(str: string) {
 
 function getTypeLength(type: string) {
   switch (type) {
-    case 'uint64[]':
+    case 'uint64':
       return 8;
     default:
       throw new Error(`Unknown type ${type}`);
@@ -170,6 +170,8 @@ export default class Compiler {
   private currentSubroutine: Subroutine = { name: '', returnType: '' };
 
   private bareMethods: { name: string, predicates: string[] }[] = [];
+
+  private scratchSlot: number = 0;
 
   abi: {
     name: string,
@@ -704,47 +706,63 @@ export default class Compiler {
   }
 
   private processArrayLiteralExpression(node: ts.ArrayLiteralExpression) {
+    const types: string[] = [];
     node.elements.forEach((e, i) => {
       this.processNode(e);
+      types.push(this.lastType);
       if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('itob');
-      if (i) this.pushVoid('concat');
+      if (i && !this.lastType.endsWith('[]')) this.pushVoid('concat');
     });
 
-    if (this.typeHint?.endsWith('[]')) {
-      this.pushVoid(`byte 0x${node.elements.length.toString(16).padStart(4, '0')}`);
-      this.pushVoid('swap');
-      this.pushVoid('concat');
+    if (types.every((t) => t === types[0])) {
+      if (types[0].endsWith('[]')) {
+        node.elements.forEach((_) => {
+          this.pushVoid('concat');
+        });
+
+        this.teal.pop();
+      }
+      this.pushVoid(`store ${this.scratchSlot}`);
+      this.pushVoid(`byte 0x${this.scratchSlot.toString(16).padStart(2, '0')}`);
+      this.scratchSlot += 1;
+    } else {
+      throw new Error('Tuples not supported yet');
     }
 
-    this.lastType = this.typeHint!;
+    this.lastType = `${types[0]}[]`;
   }
 
-  private processElementAccessExpression(node: ts.ElementAccessExpression) {
-    if (ts.isIdentifier(node.expression)) {
+  private processElementAccessExpression(
+    node: ts.ElementAccessExpression,
+    chain: ts.Expression[] = [],
+  ) {
+    chain.push(node.argumentExpression);
+    if (ts.isElementAccessExpression(node.expression)) {
+      this.processElementAccessExpression(node.expression, chain);
+    } else {
       this.processNode(node.expression);
 
-      let byteOffset = getTypeLength(this.lastType)
-      * parseInt(node.argumentExpression.getText(), 10);
-
-      if (this.lastType.endsWith('[]')) byteOffset += 2;
-
-      this.pushVoid(`extract ${byteOffset} ${getTypeLength(this.lastType)}`);
-      this.lastType = this.lastType.replace('[]', '');
-      if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('btoi');
-      return;
+      chain.reverse().forEach((e) => this.processElementAccessArgumentExpression(e));
     }
-    if (!ts.isPropertyAccessExpression(node.expression)) throw new Error(`Element access expression must be property access expression (given ${ts.SyntaxKind[node.expression.kind]})`);
-    switch (node.expression.name.getText()) {
-      case 'txnGroup':
-        this.processNode(node.argumentExpression);
-        this.lastType = 'GroupTxn';
-        break;
-      default:
-        this.processNode(node.expression);
-        if (!ts.isNumericLiteral(node.argumentExpression)) throw new Error('Element access expression argument must be numeric literal');
-        this.push(`${this.teal.pop()} ${node.argumentExpression.text}`, this.lastType.replace('[]', ''));
-        break;
+  }
+
+  private processElementAccessArgumentExpression(node: ts.Expression) {
+    this.pushVoid('btoi');
+    this.pushVoid('loads');
+
+    const type = this.lastType.replace(/\[\]$/, '');
+
+    if (!type.endsWith('[]')) {
+      const byteOffset = getTypeLength(type)
+      * parseInt(node.getText(), 10);
+
+      this.pushVoid(`extract ${byteOffset} ${getTypeLength(type)}`);
+      if (['uint64', 'Asset', 'Application'].includes(type)) this.pushVoid('btoi');
+    } else {
+      this.pushVoid(`extract ${parseInt(node.getText(), 10)} 1`);
     }
+
+    this.lastType = type;
   }
 
   private processMethodDefinition(node: ts.MethodDeclaration) {
@@ -1555,6 +1573,8 @@ export default class Compiler {
     const json = await response.json();
 
     if (response.status !== 200) {
+      console.warn(this.approvalProgram().split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n'));
+
       throw new Error(`${response.statusText}: ${json.message}`);
     }
 

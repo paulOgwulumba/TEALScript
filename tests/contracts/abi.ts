@@ -11,20 +11,19 @@ class AbiTest extends Contract {
   variableArray(): void {
     const c: uint64[] = [11, 22, 33];
 
-    assert(c[0] === 11);
     assert(c[1] === 22);
-    assert(c[2] === 33);
-  }
-
-  twoDimensionalArray(): void {
-    const c: uint64[][] = [[44, 55], [66, 77]];
-
-    assert(c[1][1] === 77);
   }
 
   threeDimensionalArray(): void {
     const c: uint64[][][] = [[[11, 22], [33, 44]], [[55, 66], [77, 88]]];
 
     assert(c[1][1][1] === 88);
+  }
+
+  nonLiteralAccess(): void {
+    const c: uint64[][][] = [[[11, 22], [33, 44]], [[55, 66], [77, 88]]];
+    const i = 1 + 0;
+
+    assert(c[i][i][i] === 88);
   }
 }

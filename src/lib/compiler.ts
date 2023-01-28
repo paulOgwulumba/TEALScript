@@ -752,15 +752,28 @@ export default class Compiler {
 
     const type = this.lastType.replace(/\[\]$/, '');
 
-    if (!type.endsWith('[]')) {
-      const byteOffset = getTypeLength(type)
-      * parseInt(node.getText(), 10);
+    if (ts.isNumericLiteral(node)) {
+      if (!type.endsWith('[]')) {
+        const byteOffset = getTypeLength(type)
+        * parseInt(node.getText(), 10);
 
-      this.pushVoid(`extract ${byteOffset} ${getTypeLength(type)}`);
-      if (['uint64', 'Asset', 'Application'].includes(type)) this.pushVoid('btoi');
+        this.pushVoid(`extract ${byteOffset} ${getTypeLength(type)}`);
+      } else {
+        this.pushVoid(`extract ${parseInt(node.getText(), 10)} 1`);
+      }
+    } else if (!type.endsWith('[]')) {
+      this.pushVoid(`int ${getTypeLength(type)}`);
+      this.processNode(node);
+      this.pushVoid('*');
+      this.pushVoid(`int ${getTypeLength(type)}`);
+      this.pushVoid('extract3');
     } else {
-      this.pushVoid(`extract ${parseInt(node.getText(), 10)} 1`);
+      this.processNode(node);
+      this.pushVoid('int 1');
+      this.pushVoid('extract3');
     }
+
+    if (['uint64', 'Asset', 'Application'].includes(type)) this.pushVoid('btoi');
 
     this.lastType = type;
   }

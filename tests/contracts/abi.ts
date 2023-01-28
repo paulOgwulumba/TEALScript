@@ -26,4 +26,21 @@ class AbiTest extends Contract {
 
     assert(c[i][i][i] === 88);
   }
+
+  setArrayValue(): void {
+    const c: uint64[] = [1, 2, 3, 4, 5];
+
+    c[1] = 22;
+
+    assert(c[1] === 22);
+  }
+
+  setNestedArrayValue(): void {
+    const c: uint64[][] = [[1, 2], [3, 4]];
+    const i = 1;
+
+    c[i][i] = 44;
+
+    assert(c[i][i] === 44);
+  }
 }

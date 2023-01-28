@@ -735,21 +735,29 @@ export default class Compiler {
   private processElementAccessExpression(
     node: ts.ElementAccessExpression,
     chain: ts.Expression[] = [],
+    equalExpression: boolean = false,
   ) {
     chain.push(node.argumentExpression);
     if (ts.isElementAccessExpression(node.expression)) {
-      this.processElementAccessExpression(node.expression, chain);
+      this.processElementAccessExpression(node.expression, chain, equalExpression);
     } else {
       this.processNode(node.expression);
 
-      chain.reverse().forEach((e) => this.processElementAccessArgumentExpression(e));
+      chain.reverse().forEach((e, i) => {
+        this.pushVoid('btoi');
+
+        // Dup for store if setting value
+        if (equalExpression && i === chain.length - 1) this.pushVoid('dup');
+
+        this.pushVoid('loads');
+        if (!equalExpression || i < chain.length - 1) {
+          this.processElementAccessArgumentExpression(e);
+        }
+      });
     }
   }
 
   private processElementAccessArgumentExpression(node: ts.Expression) {
-    this.pushVoid('btoi');
-    this.pushVoid('loads');
-
     const type = this.lastType.replace(/\[\]$/, '');
 
     if (ts.isNumericLiteral(node)) {
@@ -850,6 +858,32 @@ export default class Compiler {
   }
 
   private processBinaryExpression(node: ts.BinaryExpression) {
+    if (node.operatorToken.getText() === '=') {
+      this.addSourceComment(node);
+      if (!ts.isElementAccessExpression(node.left)) throw new Error();
+
+      this.processElementAccessExpression(node.left, [], true);
+      const type = this.lastType.replace(/\[\]$/, '');
+      if (type.endsWith('[]')) throw new Error('Cannot assign arrays');
+
+      // Get offset
+      this.processNode(node.left.argumentExpression);
+      this.pushVoid(`int ${getTypeLength(type)}`);
+      this.pushVoid('*');
+
+      // Get new value
+      this.processNode(node.right);
+      if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('itob');
+
+      // Replace old value with new value
+      this.pushVoid('replace3');
+
+      // Store with scratch slot saved in the stack
+      this.pushVoid('stores');
+
+      return;
+    }
+
     if (['&&', '||'].includes(node.operatorToken.getText())) {
       this.processLogicalExpression(node);
       return;
@@ -1586,6 +1620,7 @@ export default class Compiler {
     const json = await response.json();
 
     if (response.status !== 200) {
+      // eslint-disable-next-line no-console
       console.warn(this.approvalProgram().split('\n').map((l, i) => `${i + 1}: ${l}`).join('\n'));
 
       throw new Error(`${response.statusText}: ${json.message}`);

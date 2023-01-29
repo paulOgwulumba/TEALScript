@@ -1,15 +1,29 @@
 /* eslint-disable func-names */
 /* eslint-disable prefer-arrow-callback */
 import { expect } from 'chai';
-// eslint-disable-next-line import/no-unresolved, import/extensions
+import { sandbox, clients } from 'beaker-ts';
 import { getMethodTeal } from './common';
+import { AbiTest } from './contracts/clients/abitest_client';
 
+let appClient: AbiTest;
 async function getTeal(methodName: string) {
   return getMethodTeal('tests/contracts/abi.ts', 'AbiTest', methodName);
 }
 
 describe('ABI', function () {
-  it('variableArray', async function () {
+  before(async function () {
+    const acct = (await sandbox.getAccounts()).pop();
+
+    appClient = new AbiTest({
+      client: clients.sandboxAlgod(),
+      signer: acct!.signer,
+      sender: acct!.addr,
+    });
+
+    await appClient.create();
+  });
+
+  it('variableArray TEAL', async function () {
     const teal = await getTeal('variableArray');
     expect(teal).to.deep.equal(
       [
@@ -38,7 +52,7 @@ describe('ABI', function () {
     );
   });
 
-  it('threeDimensionalArray', async function () {
+  it('threeDimensionalArray TEAL', async function () {
     const teal = await getTeal('threeDimensionalArray');
     expect(teal).to.deep.equal(
       [
@@ -100,7 +114,7 @@ describe('ABI', function () {
     );
   });
 
-  it('nonLiteralAccess', async function () {
+  it('nonLiteralAccess TEAL', async function () {
     const teal = await getTeal('nonLiteralAccess');
     expect(teal).to.deep.equal(
       [
@@ -175,7 +189,7 @@ describe('ABI', function () {
     );
   });
 
-  it('setArrayValue', async function () {
+  it('setArrayValue TEAL', async function () {
     const teal = await getTeal('setArrayValue');
     expect(teal).to.deep.equal(
       [
@@ -222,7 +236,7 @@ describe('ABI', function () {
     );
   });
 
-  it('setNestedArrayValue', async function () {
+  it('setNestedArrayValue TEAL', async function () {
     const teal = await getTeal('setNestedArrayValue');
     expect(teal).to.deep.equal(
       [
@@ -285,5 +299,25 @@ describe('ABI', function () {
         'assert',
       ],
     );
+  });
+
+  it('variableArray runtime', async function () {
+    await appClient.variableArray();
+  });
+
+  it('threeDimensionalArray runtime', async function () {
+    await appClient.threeDimensionalArray();
+  });
+
+  it('nonLiteralAccess runtime', async function () {
+    await appClient.nonLiteralAccess();
+  });
+
+  it('setArrayValue runtime', async function () {
+    await appClient.setArrayValue();
+  });
+
+  it('setNestedArrayValue runtime', async function () {
+    await appClient.setNestedArrayValue();
   });
 });

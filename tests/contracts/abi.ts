@@ -8,6 +8,9 @@ import { Contract } from '../../src/lib/index';
 
 // eslint-disable-next-line no-unused-vars
 class AbiTest extends Contract {
+  @createApplication
+  create(): void {}
+
   variableArray(): void {
     const c: uint64[] = [11, 22, 33];
 

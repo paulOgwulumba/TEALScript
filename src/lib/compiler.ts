@@ -902,9 +902,26 @@ export default class Compiler {
       this.addSourceComment(node);
       if (!ts.isElementAccessExpression(node.left)) throw new Error();
 
-      this.processElementAccessExpression(node.left, [], true);
       const type = this.lastType.replace(/\[\]$/, '');
-      if (type.endsWith('[]')) throw new Error('Cannot assign arrays');
+      if (type.endsWith('[]')) {
+        this.processElementAccessExpression(node.left);
+
+        // Get scratch slot
+        this.pushVoid('btoi');
+
+        // Get new array
+        this.processNode(node.right);
+        this.pushVoid('btoi');
+        this.pushVoid('loads');
+
+        // Replace old array with new array
+        this.pushVoid('stores');
+
+        this.scratchSlot -= 1;
+        return;
+      }
+
+      this.processElementAccessExpression(node.left, [], true);
 
       // Get offset
       this.processNode(node.left.argumentExpression);

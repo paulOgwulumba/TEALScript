@@ -52,4 +52,12 @@ class AbiTest extends Contract {
 
     return c[2];
   }
+
+  setNestedArray(): uint64 {
+    const c: uint64[][] = [[1, 2], [3, 4]];
+
+    c[1] = [33, 44];
+
+    return c[1][1];
+  }
 }

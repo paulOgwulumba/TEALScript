@@ -940,6 +940,7 @@ export default class Compiler {
         this.pushVoid('load 0');
         this.pushVoid('int 1');
         this.pushVoid('-');
+        this.pushVoid('store 0');
         return;
       }
 

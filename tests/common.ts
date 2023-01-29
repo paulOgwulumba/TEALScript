@@ -1,5 +1,5 @@
 import fs from 'fs';
-// eslint-disable-next-line import/no-unresolved, import/extensions
+
 import Compiler from '../src/lib/compiler';
 
 export async function getMethodTeal(

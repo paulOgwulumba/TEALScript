@@ -1,7 +1,7 @@
 /* eslint-disable func-names */
 /* eslint-disable prefer-arrow-callback */
 import { expect } from 'chai';
-// eslint-disable-next-line import/no-unresolved, import/extensions
+
 import { getMethodTeal } from './common';
 
 async function getTeal(methodName: string) {

@@ -4,7 +4,7 @@
 /* eslint-disable prefer-arrow-callback */
 import * as fs from 'fs';
 import { expect } from 'chai';
-// eslint-disable-next-line import/no-unresolved, import/extensions
+
 import Compiler from '../src/lib/compiler';
 
 ['Master', 'Vault'].forEach((className) => {

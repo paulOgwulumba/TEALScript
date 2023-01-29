@@ -1,7 +1,7 @@
 /* eslint-disable func-names */
 /* eslint-disable prefer-arrow-callback */
 import { expect } from 'chai';
-// eslint-disable-next-line import/no-unresolved, import/extensions
+
 import { getMethodTeal, lowerFirstChar } from './common';
 import * as langspec from '../src/langspec.json';
 

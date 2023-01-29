@@ -482,4 +482,9 @@ describe('ABI', function () {
     const ret = await appClient.setNestedArray();
     expect(ret.returnValue).to.equal(BigInt(44));
   });
+
+  it('setMultiNestedArray runtime', async function () {
+    const ret = await appClient.setMultiNestedArray();
+    expect(ret.returnValue).to.equal(BigInt(88));
+  });
 });

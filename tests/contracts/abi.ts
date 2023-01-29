@@ -60,4 +60,12 @@ class AbiTest extends Contract {
 
     return c[1][1];
   }
+
+  setMultiNestedArray(): uint64 {
+    const c: uint64[][][] = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]];
+
+    c[1] = [[55, 66], [77, 88]];
+
+    return c[1][1][1];
+  }
 }

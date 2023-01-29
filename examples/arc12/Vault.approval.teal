@@ -565,6 +565,8 @@ delete:
 	retsub
 
 main:
+	int 1
+	store 0
 	txn NumAppArgs
 	bnz route_abi
 	int DeleteApplication

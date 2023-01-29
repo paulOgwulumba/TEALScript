@@ -173,8 +173,6 @@ export default class Compiler {
 
   private bareMethods: { name: string, predicates: string[] }[] = [];
 
-  private scratchSlot: number = 0;
-
   abi: {
     name: string,
     desc: string,
@@ -535,6 +533,8 @@ export default class Compiler {
 
     if (!this.teal.includes('main:')) {
       this.pushVoid('main:');
+      this.pushVoid('int 1');
+      this.pushVoid('store 0');
       this.routeAbiMethods();
     }
 
@@ -707,6 +707,25 @@ export default class Compiler {
     }
   }
 
+  private incrementScratchSlot() {
+    this.pushVoid('load 0');
+    this.pushVoid('int 1');
+    this.pushVoid('+');
+    this.pushVoid('store 0');
+  }
+
+  private getScratchSlot() {
+    this.pushVoid('load 0');
+    this.pushVoid('itob');
+    this.pushVoid('extract 7 1');
+  }
+
+  private storeInScratchSlot() {
+    this.pushVoid('load 0');
+    this.pushVoid('swap');
+    this.pushVoid('stores');
+  }
+
   private processArrayLiteralExpression(node: ts.ArrayLiteralExpression) {
     const types: string[] = [];
     node.elements.forEach((e, i) => {
@@ -726,16 +745,16 @@ export default class Compiler {
       } else if (types[0] === StackType.bytes) {
         node.elements.forEach((_, i) => {
           if (i) this.pushVoid('swap');
-          this.pushVoid(`store ${this.scratchSlot}`);
-          this.pushVoid(`byte 0x${this.scratchSlot.toString(16).padStart(2, '0')}`);
-          this.scratchSlot += 1;
+          this.storeInScratchSlot();
+          this.getScratchSlot();
+          this.incrementScratchSlot();
           if (i) this.pushVoid('swap');
           if (i) this.pushVoid('concat');
         });
       }
-      this.pushVoid(`store ${this.scratchSlot}`);
-      this.pushVoid(`byte 0x${this.scratchSlot.toString(16).padStart(2, '0')}`);
-      this.scratchSlot += 1;
+      this.storeInScratchSlot();
+      this.getScratchSlot();
+      this.incrementScratchSlot();
     } else {
       throw new Error('Tuples not supported yet');
     }
@@ -917,7 +936,10 @@ export default class Compiler {
         // Replace old array with new array
         this.pushVoid('stores');
 
-        this.scratchSlot -= 1;
+        // Decrement scratch slot
+        this.pushVoid('load 0');
+        this.pushVoid('int 1');
+        this.pushVoid('-');
         return;
       }
 

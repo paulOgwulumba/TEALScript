@@ -19,7 +19,7 @@ src.statements.forEach(async (body) => {
     const approvalTealPath = path.join(dir, `${name}.approval.teal`);
     const clearTealPath = path.join(dir, `${name}.clear.teal`);
     const abiPath = path.join(dir, `${name}.abi.json`);
-    const appPath = path.join(dir, `${name}.json`);
+    const appPath = path.join(dir, `${name}.app.json`);
     const srcmapPath = path.join(dir, `${name}.src_map.json`);
 
     const compiler = new Compiler(content, name, filename);

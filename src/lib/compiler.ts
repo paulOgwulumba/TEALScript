@@ -93,10 +93,10 @@ const PARAM_TYPES: { [param: string]: string } = {
   FreezeAssetAccount: ForeignType.Account,
   CreatedAssetID: ForeignType.Asset,
   CreatedApplicationID: ForeignType.Application,
-  ApplicationArgs: `${StackType.bytes}[]`,
-  Applications: `${ForeignType.Application}[]`,
-  Assets: `${ForeignType.Asset}[]`,
-  Accounts: `${ForeignType.Account}[]`,
+  ApplicationArgs: `ImmediateArray: ${StackType.bytes}`,
+  Applications: `ImmediateArray: ${ForeignType.Application}`,
+  Assets: `ImmediateArray: ${ForeignType.Asset}`,
+  Accounts: `ImmediateArray: ${ForeignType.Account}`,
 };
 
 interface OpSpec {
@@ -743,7 +743,13 @@ export default class Compiler {
     } else {
       this.processNode(node.expression);
 
+      const isAbiArray = this.lastType !== 'txnGroup' && !this.lastType.startsWith('ImmediateArray');
+
       chain.reverse().forEach((e, i) => {
+        if (!isAbiArray) {
+          this.processElementAccessArgumentExpression(e);
+          return;
+        }
         this.pushVoid('btoi');
 
         // Dup for store if setting value
@@ -758,6 +764,17 @@ export default class Compiler {
   }
 
   private processElementAccessArgumentExpression(node: ts.Expression) {
+    if (this.lastType === 'txnGroup') {
+      this.processNode(node);
+      this.lastType = 'GroupTxn';
+      return;
+    }
+
+    if (this.lastType.startsWith('ImmediateArray')) {
+      this.push(`${this.teal.pop()} ${node.getText()}`, this.lastType.replace('ImmediateArray: ', ''));
+      return;
+    }
+
     const type = this.lastType.replace(/\[\]$/, '');
 
     if (ts.isNumericLiteral(node)) {

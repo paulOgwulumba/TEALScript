@@ -12,6 +12,8 @@ function getTypeLength(type: string) {
   switch (type) {
     case 'uint64':
       return 8;
+    case 'bytes':
+      return 0;
     default:
       throw new Error(`Unknown type ${type}`);
   }
@@ -711,7 +713,7 @@ export default class Compiler {
       this.processNode(e);
       types.push(this.lastType);
       if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('itob');
-      if (i && !this.lastType.endsWith('[]')) this.pushVoid('concat');
+      if (i && !this.lastType.endsWith('[]') && this.lastType !== StackType.bytes) this.pushVoid('concat');
     });
 
     if (types.every((t) => t === types[0])) {
@@ -721,6 +723,15 @@ export default class Compiler {
         });
 
         this.teal.pop();
+      } else if (types[0] === StackType.bytes) {
+        node.elements.forEach((_, i) => {
+          if (i) this.pushVoid('swap');
+          this.pushVoid(`store ${this.scratchSlot}`);
+          this.pushVoid(`byte 0x${this.scratchSlot.toString(16).padStart(2, '0')}`);
+          this.scratchSlot += 1;
+          if (i) this.pushVoid('swap');
+          if (i) this.pushVoid('concat');
+        });
       }
       this.pushVoid(`store ${this.scratchSlot}`);
       this.pushVoid(`byte 0x${this.scratchSlot.toString(16).padStart(2, '0')}`);
@@ -778,7 +789,7 @@ export default class Compiler {
     const type = this.lastType.replace(/\[\]$/, '');
 
     if (ts.isNumericLiteral(node)) {
-      if (!type.endsWith('[]')) {
+      if (!type.endsWith('[]') && type !== StackType.bytes) {
         const byteOffset = getTypeLength(type)
         * parseInt(node.getText(), 10);
 
@@ -786,7 +797,7 @@ export default class Compiler {
       } else {
         this.pushVoid(`extract ${parseInt(node.getText(), 10)} 1`);
       }
-    } else if (!type.endsWith('[]')) {
+    } else if (!type.endsWith('[]') && type !== StackType.bytes) {
       this.pushVoid(`int ${getTypeLength(type)}`);
       this.processNode(node);
       this.pushVoid('*');
@@ -796,6 +807,11 @@ export default class Compiler {
       this.processNode(node);
       this.pushVoid('int 1');
       this.pushVoid('extract3');
+    }
+
+    if (type === StackType.bytes) {
+      this.pushVoid('btoi');
+      this.pushVoid('loads');
     }
 
     if (['uint64', 'Asset', 'Application'].includes(type)) this.pushVoid('btoi');
@@ -859,6 +875,13 @@ export default class Compiler {
 
         // eslint-disable-next-line no-console
         console.warn(`WARNING: Converting ${name} return value from ${this.lastType} to ${returnType}`);
+      } else if (returnType === 'string' && this.lastType === StackType.bytes) {
+        this.pushVoid('dup');
+        this.pushVoid('len');
+        this.pushVoid('itob');
+        this.pushVoid('extract 6 0');
+        this.pushVoid('swap');
+        this.pushVoid('concat');
       } else throw new Error(`Type mismatch (${returnType} !== ${this.lastType})`);
     } else if (isNumeric(returnType)) {
       this.pushVoid('itob');

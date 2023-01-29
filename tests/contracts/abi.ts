@@ -46,4 +46,10 @@ class AbiTest extends Contract {
 
     assert(c[i][i] === 44);
   }
+
+  stringArray(): string {
+    const c: string[] = ['hello', 'world', 'test', '123'];
+
+    return c[2];
+  }
 }

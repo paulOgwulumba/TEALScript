@@ -320,4 +320,9 @@ describe('ABI', function () {
   it('setNestedArrayValue runtime', async function () {
     await appClient.setNestedArrayValue();
   });
+
+  it('stringArray runtime', async function () {
+    const ret = await appClient.stringArray();
+    expect(ret.returnValue).to.equal('test');
+  });
 });

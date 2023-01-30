@@ -921,6 +921,11 @@ export default class Compiler {
       this.addSourceComment(node);
       if (!ts.isElementAccessExpression(node.left)) throw new Error();
 
+      // Get the type while preserving the TEAL
+      const preTeal = [...this.teal];
+      this.processElementAccessExpression(node.left, [], true);
+      this.teal = preTeal;
+
       const type = this.lastType.replace(/\[\]$/, '');
       if (type.endsWith('[]')) {
         this.processElementAccessExpression(node.left);

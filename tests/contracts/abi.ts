@@ -92,4 +92,11 @@ class AbiTest extends Contract {
 
     return arr[1];
   }
+
+  nestedArrayVariable(): uint64 {
+    const a1 = [3, 4, 5];
+    const a2 = [[1, 2, 3], a1];
+
+    return a2[1][1];
+  }
 }

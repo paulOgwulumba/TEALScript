@@ -511,4 +511,9 @@ describe('ABI', function () {
     const ret = await appClient.uint256Array({ a, b, c });
     expect(ret.returnValue).to.equal(b);
   });
+
+  it('nestedArrayVariable runtime', async function () {
+    const ret = await appClient.nestedArrayVariable();
+    expect(ret.returnValue).to.equal(BigInt(4));
+  });
 });

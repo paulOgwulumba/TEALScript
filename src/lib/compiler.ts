@@ -208,7 +208,7 @@ export default class Compiler {
 
   private comments: number[] = [];
 
-  private typeHint?: string;
+  private typeHint?: ts.TypeNode;
 
   private readonly OP_PARAMS: {
     [type: string]: {name: string, type?: string, args: number, fn: () => void}[]
@@ -736,6 +736,9 @@ export default class Compiler {
     const types: string[] = [];
     node.elements.forEach((e, i) => {
       this.processNode(e);
+      if (this.typeHint && ts.isTupleTypeNode(this.typeHint)) {
+        this.lastType = this.typeHint.elements[i].getText();
+      }
       types.push(this.lastType);
       if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('itob');
       if (i && !this.lastType.endsWith('[]') && this.lastType !== StackType.bytes) this.pushVoid('concat');
@@ -761,11 +764,18 @@ export default class Compiler {
       this.storeInScratchSlot();
       this.getScratchSlot();
       this.incrementScratchSlot();
+      this.lastType = `${types[0]}[]`;
     } else {
-      throw new Error('Tuples not supported yet');
-    }
+      types.forEach((t, i) => {
+        if (t.endsWith('[]')) throw new Error('Dynamic types in tuples not yet supported');
+      });
 
-    this.lastType = `${types[0]}[]`;
+      this.storeInScratchSlot();
+      this.getScratchSlot();
+      this.pushVoid('dup');
+      this.incrementScratchSlot();
+      this.lastType = this.typeHint!.getText();
+    }
   }
 
   private processElementAccessExpression(
@@ -808,6 +818,28 @@ export default class Compiler {
 
     if (this.lastType.startsWith('ImmediateArray')) {
       this.push(`${this.teal.pop()} ${node.getText()}`, this.lastType.replace('ImmediateArray: ', ''));
+      return;
+    }
+
+    if (this.lastType.startsWith('[')) {
+      if (!ts.isNumericLiteral(node)) throw new Error('Tuple index must be a literal');
+
+      const index = parseInt(node.getText(), 10);
+      let offset = 0;
+
+      const tupleTypes = this.lastType.replace(/^\[/, '').replace(/\]$/, '').split(',').map((t) => t.trim());
+
+      // eslint-disable-next-line no-plusplus
+      for (let i = 0; i < index; i++) {
+        offset += getTypeLength(tupleTypes[i]);
+      }
+
+      this.pushVoid(`extract ${offset} ${getTypeLength(tupleTypes[index])}`);
+
+      if (tupleTypes[index] === 'uint64') this.pushVoid('btoi');
+
+      this.lastType = tupleTypes[index];
+
       return;
     }
 
@@ -1053,8 +1085,13 @@ export default class Compiler {
       if (lastBitWidth > typeBitWidth) console.warn('WARNING: Converting value from ', this.lastType, 'to ', type, 'may result in loss of precision');
 
       if (this.lastType === 'uint64') this.pushVoid('itob');
-      this.pushVoid(`byte 0x${'FF'.repeat(typeBitWidth / 8)}`);
-      this.pushVoid('b&');
+
+      if (lastBitWidth < typeBitWidth) {
+        this.pushVoid(`byte 0x${'FF'.repeat(typeBitWidth / 8)}`);
+        this.pushVoid('b&');
+      } else {
+        this.pushVoid(`extract ${lastBitWidth / 8 - typeBitWidth / 8} 0`);
+      }
     }
 
     this.lastType = type;
@@ -1062,7 +1099,7 @@ export default class Compiler {
 
   private processVariableDeclaration(node: ts.VariableDeclarationList) {
     node.declarations.forEach((d) => {
-      this.typeHint = d.type?.getText();
+      this.typeHint = d.type;
       this.processNode(d);
       this.typeHint = undefined;
     });

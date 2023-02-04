@@ -99,4 +99,10 @@ class AbiTest extends Contract {
 
     return a2[1][1];
   }
+
+  simpleTuple(): uint64 {
+    const t: [uint8, uint64, uint8] = [11 as uint8, 22, 33 as uint8];
+
+    return t[2];
+  }
 }

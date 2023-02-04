@@ -516,4 +516,9 @@ describe('ABI', function () {
     const ret = await appClient.nestedArrayVariable();
     expect(ret.returnValue).to.equal(BigInt(4));
   });
+
+  it('simpleTuple runtime', async function () {
+    const ret = await appClient.simpleTuple();
+    expect(ret.returnValue).to.equal(BigInt(33));
+  });
 });

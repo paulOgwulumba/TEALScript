@@ -9,11 +9,17 @@ function capitalizeFirstChar(str: string) {
 }
 
 function getTypeLength(type: string) {
+  if (type.startsWith('uint')) {
+    return parseInt(type.slice(4), 10) / 8;
+  }
   switch (type) {
-    case 'uint64':
+    case 'Asset':
+    case 'Application':
       return 8;
     case 'bytes':
       return 0;
+    case 'Account':
+      return 32;
     default:
       throw new Error(`Unknown type ${type}`);
   }

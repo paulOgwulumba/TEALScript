@@ -68,4 +68,28 @@ class AbiTest extends Contract {
 
     return c[1][1][1];
   }
+
+  accountArray(a: Account, b: Account, c: Account): Account {
+    const arr = [a, b, c];
+
+    return arr[1];
+  }
+
+  assetArray(a: Asset, b: Asset, c: Asset): Asset {
+    const arr = [a, b, c];
+
+    return arr[1];
+  }
+
+  appArray(a: Application, b: Application, c: Application): Application {
+    const arr = [a, b, c];
+
+    return arr[1];
+  }
+
+  uint256Array(a: uint256, b: uint256, c: uint256): uint256 {
+    const arr = [a, b, c];
+
+    return arr[1];
+  }
 }

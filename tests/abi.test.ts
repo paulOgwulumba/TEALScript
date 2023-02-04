@@ -487,4 +487,28 @@ describe('ABI', function () {
     const ret = await appClient.setMultiNestedArray();
     expect(ret.returnValue).to.equal(BigInt(88));
   });
+
+  it('accountArray runtime', async function () {
+    const [a, b, c] = (await sandbox.getAccounts()).map((acct) => acct.addr);
+    const ret = await appClient.accountArray({ a, b, c });
+    expect(ret.returnValue).to.equal(b);
+  });
+
+  it('assetArray runtime', async function () {
+    const [a, b, c] = [BigInt(1), BigInt(2), BigInt(3)];
+    const ret = await appClient.assetArray({ a, b, c });
+    expect(ret.returnValue).to.equal(b);
+  });
+
+  it('appArray runtime', async function () {
+    const [a, b, c] = [BigInt(1), BigInt(2), BigInt(3)];
+    const ret = await appClient.appArray({ a, b, c });
+    expect(ret.returnValue).to.equal(b);
+  });
+
+  it('uint256Array runtime', async function () {
+    const [a, b, c] = [BigInt(1), BigInt(2), BigInt(3)];
+    const ret = await appClient.uint256Array({ a, b, c });
+    expect(ret.returnValue).to.equal(b);
+  });
 });

@@ -17,7 +17,7 @@ function getTypeLength(type: string) {
     case 'Application':
       return 8;
     case 'bytes':
-      return 0;
+      return 1;
     case 'Account':
       return 32;
     default:
@@ -736,51 +736,31 @@ export default class Compiler {
     const types: string[] = [];
     node.elements.forEach((e, i) => {
       this.processNode(e);
-      if (this.typeHint && ts.isTupleTypeNode(this.typeHint)) {
-        this.lastType = this.typeHint.elements[i].getText();
-      }
+      if ([StackType.uint64, 'Application', 'Asset'].includes(this.lastType)) this.pushVoid('itob');
       types.push(this.lastType);
-      if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('itob');
-      if (i && !this.lastType.endsWith('[]') && this.lastType !== StackType.bytes) this.pushVoid('concat');
     });
 
-    if (types.every((t) => t === types[0])) {
-      if (types[0].endsWith('[]')) {
-        node.elements.forEach((_) => {
-          this.pushVoid('concat');
-        });
+    this.pushVoid('byte 0x');
 
-        this.teal.pop();
-      } else if (types[0] === StackType.bytes) {
-        node.elements.forEach((_, i) => {
-          if (i) this.pushVoid('swap');
-          this.storeInScratchSlot();
-          this.getScratchSlot();
-          this.incrementScratchSlot();
-          if (i) this.pushVoid('swap');
-          if (i) this.pushVoid('concat');
-        });
+    types.reverse().forEach((t) => {
+      if (t === StackType.bytes) {
+        this.pushVoid('swap');
+        this.storeInScratchSlot();
+        this.getScratchSlot();
+        this.incrementScratchSlot();
+        this.pushVoid('swap');
       }
-      this.storeInScratchSlot();
-      this.getScratchSlot();
-      this.incrementScratchSlot();
+
+      this.pushVoid('concat');
+    });
+
+    this.storeInScratchSlot();
+    this.getScratchSlot();
+    this.incrementScratchSlot();
+
+    if (types.every((t) => t === types[0])) {
       this.lastType = `${types[0]}[]`;
     } else {
-      types.forEach((t, i) => {
-        if (t.endsWith('[]')) throw new Error('Dynamic types in tuples not yet supported');
-
-        if (t === StackType.bytes) {
-          this.storeInScratchSlot();
-          this.getScratchSlot();
-          this.incrementScratchSlot();
-          if (i) this.pushVoid('concat');
-        }
-      });
-
-      this.storeInScratchSlot();
-      this.getScratchSlot();
-      this.pushVoid('dup');
-      this.incrementScratchSlot();
       this.lastType = this.typeHint!.getText();
     }
   }

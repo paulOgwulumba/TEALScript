@@ -105,4 +105,10 @@ class AbiTest extends Contract {
 
     return t[2];
   }
+
+  stringInTuple(): string {
+    const t: [uint64, bytes] = [11, 'hello world'];
+
+    return t[1];
+  }
 }

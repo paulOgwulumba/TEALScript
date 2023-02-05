@@ -768,6 +768,13 @@ export default class Compiler {
     } else {
       types.forEach((t, i) => {
         if (t.endsWith('[]')) throw new Error('Dynamic types in tuples not yet supported');
+
+        if (t === StackType.bytes) {
+          this.storeInScratchSlot();
+          this.getScratchSlot();
+          this.incrementScratchSlot();
+          if (i) this.pushVoid('concat');
+        }
       });
 
       this.storeInScratchSlot();
@@ -834,7 +841,11 @@ export default class Compiler {
         offset += getTypeLength(tupleTypes[i]);
       }
 
-      this.pushVoid(`extract ${offset} ${getTypeLength(tupleTypes[index])}`);
+      if (tupleTypes[index] === StackType.bytes) {
+        this.pushVoid(`extract ${offset} 1`);
+        this.pushVoid('btoi');
+        this.pushVoid('loads');
+      } else this.pushVoid(`extract ${offset} ${getTypeLength(tupleTypes[index])}`);
 
       if (tupleTypes[index] === 'uint64') this.pushVoid('btoi');
 

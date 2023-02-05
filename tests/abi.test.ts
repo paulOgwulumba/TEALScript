@@ -521,4 +521,9 @@ describe('ABI', function () {
     const ret = await appClient.simpleTuple();
     expect(ret.returnValue).to.equal(BigInt(33));
   });
+
+  it('stringInTuple runtime', async function () {
+    const ret = await appClient.stringInTuple();
+    expect(ret.returnValue).to.equal('hello world');
+  });
 });

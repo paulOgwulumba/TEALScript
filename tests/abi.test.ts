@@ -92,4 +92,9 @@ describe('ABI', function () {
     const ret = await appClient.stringInTuple();
     expect(ret.returnValue).to.equal('hello world');
   });
+
+  it('arrayInTuple runtime', async function () {
+    const ret = await appClient.arrayInTuple();
+    expect(ret.returnValue).to.equal(BigInt(3));
+  });
 });

@@ -111,4 +111,10 @@ class AbiTest extends Contract {
 
     return t[1];
   }
+
+  arrayInTuple(): uint64 {
+    const t: [uint64, uint64[]] = [1, [2, 3, 4]];
+
+    return t[1][1];
+  }
 }

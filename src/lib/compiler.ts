@@ -831,6 +831,8 @@ export default class Compiler {
         this.pushVoid(`extract ${offset} 1`);
         this.pushVoid('btoi');
         this.pushVoid('loads');
+      } else if (tupleTypes[index].endsWith('[]')) {
+        this.pushVoid(`extract ${offset} 1`);
       } else this.pushVoid(`extract ${offset} ${getTypeLength(tupleTypes[index])}`);
 
       if (tupleTypes[index] === 'uint64') this.pushVoid('btoi');

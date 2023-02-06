@@ -515,6 +515,18 @@ export default class Compiler {
   }
 
   async compile() {
+    this.pushVoid('unmarshal:');
+    this.storeInScratchSlot();
+    this.getScratchSlot();
+    this.incrementScratchSlot();
+    this.pushVoid('retsub');
+
+    this.pushVoid('unmarshal_bytes:');
+    this.pushVoid('swap');
+    this.pushVoid('callsub unmarshal');
+    this.pushVoid('swap');
+    this.pushVoid('retsub');
+
     this.sourceFile.statements.forEach((body) => {
       if (!ts.isClassDeclaration(body)) return;
 
@@ -744,19 +756,13 @@ export default class Compiler {
 
     types.reverse().forEach((t) => {
       if (t === StackType.bytes) {
-        this.pushVoid('swap');
-        this.storeInScratchSlot();
-        this.getScratchSlot();
-        this.incrementScratchSlot();
-        this.pushVoid('swap');
+        this.pushVoid('callsub unmarshal_bytes');
       }
 
       this.pushVoid('concat');
     });
 
-    this.storeInScratchSlot();
-    this.getScratchSlot();
-    this.incrementScratchSlot();
+    this.pushVoid('callsub unmarshal');
 
     if (types.every((t) => t === types[0])) {
       this.lastType = `${types[0]}[]`;

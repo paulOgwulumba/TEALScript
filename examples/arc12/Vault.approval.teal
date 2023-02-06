@@ -1,6 +1,25 @@
 #pragma version 8
 	b main
 
+unmarshal:
+	load 0
+	swap
+	stores
+	load 0
+	itob
+	extract 7 1
+	load 0
+	int 1
+	+
+	store 0
+	retsub
+
+unmarshal_bytes:
+	swap
+	callsub unmarshal
+	swap
+	retsub
+
 closeAcct:
 	proto 3 0
 

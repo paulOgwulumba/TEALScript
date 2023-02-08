@@ -917,9 +917,22 @@ export default class Compiler {
 
     const { returnType, name } = this.currentSubroutine;
 
+    if (returnType.endsWith('[]')) {
+      this.pushVoid('btoi');
+      this.pushVoid('loads');
+      this.pushVoid('dup');
+      this.pushVoid('len');
+      this.pushVoid(`int ${getTypeLength(returnType.replace(/\[\]$/, ''))}`);
+      this.pushVoid('/');
+      this.pushVoid('itob');
+      this.pushVoid('extract 6 0');
+      this.pushVoid('swap');
+      this.pushVoid('concat');
+    }
+
     // Automatically convert to larger int IF the types dont match
     if (returnType !== this.lastType) {
-      if (this.lastType?.startsWith('uint')) {
+      if (this.lastType?.match(/uint\d+$/)) {
         const returnBitWidth = parseInt(returnType.replace('uint', ''), 10);
         const lastBitWidth = parseInt(this.lastType.replace('uint', ''), 10);
         if (lastBitWidth > returnBitWidth) throw new Error(`Value (${this.lastType}) too large for return type (${returnType})`);
@@ -941,7 +954,7 @@ export default class Compiler {
       } else throw new Error(`Type mismatch (${returnType} !== ${this.lastType})`);
     } else if (isNumeric(returnType)) {
       this.pushVoid('itob');
-    } else if (returnType.startsWith('uint')) {
+    } else if (returnType.match(/uint\d+$/)) {
       const returnBitWidth = parseInt(returnType.replace('uint', ''), 10);
       this.pushVoid(`byte 0x${'FF'.repeat(returnBitWidth / 8)}`);
       this.pushVoid('b&');

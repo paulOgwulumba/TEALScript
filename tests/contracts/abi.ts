@@ -117,4 +117,10 @@ class AbiTest extends Contract {
 
     return t[1][1];
   }
+
+  returnStaticArray(): uint64[] {
+    const a = [1, 2, 3];
+
+    return a;
+  }
 }

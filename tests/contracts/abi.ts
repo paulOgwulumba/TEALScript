@@ -123,4 +123,8 @@ class AbiTest extends Contract {
 
     return a;
   }
+
+  staticArrayArg(a: uint64[]): uint64 {
+    return a[1];
+  }
 }

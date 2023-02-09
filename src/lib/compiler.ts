@@ -1504,6 +1504,9 @@ export default class Compiler {
         this.pushVoid('txn GroupIndex');
         this.pushVoid(`int ${(gtxnIndex += 1)}`);
         this.pushVoid('-');
+      } else if (type.endsWith('[]')) {
+        this.pushVoid('extract 2 0');
+        this.pushVoid('callsub unmarshal');
       }
 
       args.push({ name: p.name.getText(), type: abiType.toLocaleLowerCase(), desc: '' });

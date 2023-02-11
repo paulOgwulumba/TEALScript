@@ -748,7 +748,7 @@ export default class Compiler {
     const types: string[] = [];
     node.elements.forEach((e, i) => {
       this.processNode(e);
-      if ([StackType.uint64, 'Application', 'Asset'].includes(this.lastType)) this.pushVoid('itob');
+      if (isNumeric(this.lastType)) this.pushVoid('itob');
       types.push(this.lastType);
     });
 
@@ -870,7 +870,7 @@ export default class Compiler {
       this.pushVoid('loads');
     }
 
-    if (['uint64', 'Asset', 'Application'].includes(type)) this.pushVoid('btoi');
+    if (isNumeric(type)) this.pushVoid('btoi');
 
     this.lastType = type;
   }
@@ -1008,7 +1008,7 @@ export default class Compiler {
 
       // Get new value
       this.processNode(node.right);
-      if (['uint64', 'Asset', 'Application'].includes(this.lastType)) this.pushVoid('itob');
+      if (isNumeric(this.lastType)) this.pushVoid('itob');
 
       // Replace old value with new value
       this.pushVoid('replace3');

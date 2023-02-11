@@ -1477,7 +1477,8 @@ export default class Compiler {
     let gtxnIndex = 0;
 
     new Array(...fn.parameters).reverse().forEach((p) => {
-      const type = p!.type!.getText();
+      if (p.type === undefined) throw new Error();
+      const type = p.type.getText();
       let abiType = type;
 
       if (type.includes('Txn')) {
@@ -1507,6 +1508,39 @@ export default class Compiler {
       } else if (type.endsWith('[]')) {
         this.pushVoid('extract 2 0');
         this.pushVoid('callsub unmarshal');
+      } else if (type.startsWith('[')) {
+        if (!ts.isTupleTypeNode(p.type)) throw Error('Invalid tuple type');
+
+        // TODO: For dynamic types, save offset in scratch
+        let offset = 0;
+        p.type.elements.forEach((e, i) => {
+          const text = e.getText();
+
+          this.pushVoid('dup');
+          this.pushVoid(`int ${offset}`);
+          this.pushVoid(`int ${getTypeLength(text)}`);
+          this.pushVoid('extract3');
+          this.pushVoid('swap');
+
+          offset += getTypeLength(text);
+        });
+
+        this.pushVoid('pop');
+
+        p.type.elements.map((t) => t.getText()).reverse().forEach((t) => {
+          if (t === StackType.bytes) {
+            this.pushVoid('callsub unmarshal_bytes');
+          }
+
+          this.pushVoid('concat');
+        });
+
+        this.pushVoid('callsub unmarshal');
+
+        abiType = abiType
+          .replace(/^\[/, '(')
+          .replace(/\]$/, ')')
+          .replace(/ /g, '');
       }
 
       args.push({ name: p.name.getText(), type: abiType.toLocaleLowerCase(), desc: '' });

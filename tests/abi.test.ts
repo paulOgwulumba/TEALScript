@@ -107,4 +107,9 @@ describe('ABI', function () {
     const ret = await appClient.staticArrayArg({ a: [BigInt(1), BigInt(2), BigInt(3)] });
     expect(ret.returnValue).to.equal(BigInt(2));
   });
+
+  it('staticTupleArg runtime', async function () {
+    const ret = await appClient.staticTupleArg({ a: [BigInt(1), BigInt(2), BigInt(3)] });
+    expect(ret.returnValue).to.equal(BigInt(3));
+  });
 });

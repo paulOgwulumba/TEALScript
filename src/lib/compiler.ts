@@ -551,7 +551,7 @@ export default class Compiler {
 
     if (!this.teal.includes('main:')) {
       this.pushVoid('main:');
-      this.pushVoid('int 1');
+      this.pushVoid('int 2');
       this.pushVoid('store 0');
       this.routeAbiMethods();
     }
@@ -1511,18 +1511,22 @@ export default class Compiler {
       } else if (type.startsWith('[')) {
         if (!ts.isTupleTypeNode(p.type)) throw Error('Invalid tuple type');
 
-        // TODO: For dynamic types, save offset in scratch
-        let offset = 0;
+        this.pushVoid('int 0');
+        this.pushVoid('store 1 // offset');
         p.type.elements.forEach((e, i) => {
           const text = e.getText();
 
           this.pushVoid('dup');
-          this.pushVoid(`int ${offset}`);
+          this.pushVoid('load 1 // offset');
           this.pushVoid(`int ${getTypeLength(text)}`);
           this.pushVoid('extract3');
           this.pushVoid('swap');
 
-          offset += getTypeLength(text);
+          // incrementOffset
+          this.pushVoid('load 1 // offset');
+          this.pushVoid(`int ${getTypeLength(text)}`);
+          this.pushVoid('+');
+          this.pushVoid('store 1 // offset');
         });
 
         this.pushVoid('pop');

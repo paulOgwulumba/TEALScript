@@ -584,7 +584,7 @@ delete:
 	retsub
 
 main:
-	int 1
+	int 2
 	store 0
 	txn NumAppArgs
 	bnz route_abi

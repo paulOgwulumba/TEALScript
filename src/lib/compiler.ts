@@ -521,11 +521,7 @@ export default class Compiler {
     this.incrementScratchSlot();
     this.pushVoid('retsub');
 
-    this.pushVoid('unmarshal_bytes:');
-    this.pushVoid('swap');
-    this.pushVoid('callsub unmarshal');
-    this.pushVoid('swap');
-    this.pushVoid('retsub');
+    this.pushLines('unmarshal_bytes:', 'swap', 'callsub unmarshal', 'swap', 'retsub');
 
     this.sourceFile.statements.forEach((body) => {
       if (!ts.isClassDeclaration(body)) return;
@@ -550,9 +546,7 @@ export default class Compiler {
     });
 
     if (!this.teal.includes('main:')) {
-      this.pushVoid('main:');
-      this.pushVoid('int 2');
-      this.pushVoid('store 0');
+      this.pushLines('main:', 'int 2', 'store 0');
       this.routeAbiMethods();
     }
 
@@ -595,6 +589,10 @@ export default class Compiler {
     this.push(teal, 'void');
   }
 
+  private pushLines(...lines: string[]) {
+    lines.forEach((l) => this.push(l, 'void'));
+  }
+
   private pushMethod(name: string, args: string[], returns: string) {
     const abiArgs = args.map((a) => a.toLowerCase());
 
@@ -616,8 +614,7 @@ export default class Compiler {
   }
 
   private routeAbiMethods() {
-    this.pushVoid('txn NumAppArgs');
-    this.pushVoid('bnz route_abi');
+    this.pushLines('txn NumAppArgs', 'bnz route_abi');
 
     // Route the bare methods with no args
     this.bareMethods.forEach((m) => {
@@ -642,12 +639,7 @@ export default class Compiler {
         m.returns.type,
       );
     });
-    this.pushVoid('txna ApplicationArgs 0');
-    this.pushVoid(
-      `match ${this.abi.methods
-        .map((m) => `abi_route_${m.name}`)
-        .join(' ')}`,
-    );
+    this.pushLines('txna ApplicationArgs 0', `match ${this.abi.methods.map((m) => `abi_route_${m.name}`).join(' ')}`);
   }
 
   private maybeValue(opcode: string, type: string) {
@@ -656,8 +648,7 @@ export default class Compiler {
   }
 
   private hasMaybeValue(opcode: string) {
-    this.pushVoid(opcode);
-    this.pushVoid('swap');
+    this.pushLines(opcode, 'swap');
     this.push('pop', StackType.uint64);
   }
 
@@ -726,22 +717,15 @@ export default class Compiler {
   }
 
   private incrementScratchSlot() {
-    this.pushVoid('load 0');
-    this.pushVoid('int 1');
-    this.pushVoid('+');
-    this.pushVoid('store 0');
+    this.pushLines('load 0', 'int 1', '+', 'store 0');
   }
 
   private getScratchSlot() {
-    this.pushVoid('load 0');
-    this.pushVoid('itob');
-    this.pushVoid('extract 7 1');
+    this.pushLines('load 0', 'itob', 'extract 7 1');
   }
 
   private storeInScratchSlot() {
-    this.pushVoid('load 0');
-    this.pushVoid('swap');
-    this.pushVoid('stores');
+    this.pushLines('load 0', 'swap', 'stores');
   }
 
   private processArrayLiteralExpression(node: ts.ArrayLiteralExpression) {
@@ -828,9 +812,7 @@ export default class Compiler {
       }
 
       if (tupleTypes[index] === StackType.bytes) {
-        this.pushVoid(`extract ${offset} 1`);
-        this.pushVoid('btoi');
-        this.pushVoid('loads');
+        this.pushLines(`extract ${offset} 1`, 'btoi', 'loads');
       } else if (tupleTypes[index].endsWith('[]')) {
         this.pushVoid(`extract ${offset} 1`);
       } else this.pushVoid(`extract ${offset} ${getTypeLength(tupleTypes[index])}`);
@@ -856,19 +838,13 @@ export default class Compiler {
     } else if (!type.endsWith('[]') && type !== StackType.bytes) {
       this.pushVoid(`int ${getTypeLength(type)}`);
       this.processNode(node);
-      this.pushVoid('*');
-      this.pushVoid(`int ${getTypeLength(type)}`);
-      this.pushVoid('extract3');
+      this.pushLines('*', `int ${getTypeLength(type)}`, 'extract3');
     } else {
       this.processNode(node);
-      this.pushVoid('int 1');
-      this.pushVoid('extract3');
+      this.pushLines('int 1', 'extract3');
     }
 
-    if (type === StackType.bytes) {
-      this.pushVoid('btoi');
-      this.pushVoid('loads');
-    }
+    if (type === StackType.bytes) this.pushLines('btoi', 'loads');
 
     if (isNumeric(type)) this.pushVoid('btoi');
 
@@ -918,16 +894,7 @@ export default class Compiler {
     const { returnType, name } = this.currentSubroutine;
 
     if (returnType.endsWith('[]')) {
-      this.pushVoid('btoi');
-      this.pushVoid('loads');
-      this.pushVoid('dup');
-      this.pushVoid('len');
-      this.pushVoid(`int ${getTypeLength(returnType.replace(/\[\]$/, ''))}`);
-      this.pushVoid('/');
-      this.pushVoid('itob');
-      this.pushVoid('extract 6 0');
-      this.pushVoid('swap');
-      this.pushVoid('concat');
+      this.pushLines('btoi', 'loads', 'dup', 'len', `int ${getTypeLength(returnType.replace(/\[\]$/, ''))}`, '/', 'itob', 'extract 6 0', 'swap', 'concat');
     }
 
     // Automatically convert to larger int IF the types dont match
@@ -939,31 +906,21 @@ export default class Compiler {
 
         if (this.lastType === 'uint64') this.pushVoid('itob');
 
-        this.pushVoid(`byte 0x${'FF'.repeat(returnBitWidth / 8)}`);
-        this.pushVoid('b&');
+        this.pushLines(`byte 0x${'FF'.repeat(returnBitWidth / 8)}`, 'b&');
 
         // eslint-disable-next-line no-console
         console.warn(`WARNING: Converting ${name} return value from ${this.lastType} to ${returnType}`);
       } else if (returnType === 'string' && this.lastType === StackType.bytes) {
-        this.pushVoid('dup');
-        this.pushVoid('len');
-        this.pushVoid('itob');
-        this.pushVoid('extract 6 0');
-        this.pushVoid('swap');
-        this.pushVoid('concat');
+        this.pushLines('dup', 'len', 'itob', 'extract 6 0', 'swap', 'concat');
       } else throw new Error(`Type mismatch (${returnType} !== ${this.lastType})`);
     } else if (isNumeric(returnType)) {
       this.pushVoid('itob');
     } else if (returnType.match(/uint\d+$/)) {
       const returnBitWidth = parseInt(returnType.replace('uint', ''), 10);
-      this.pushVoid(`byte 0x${'FF'.repeat(returnBitWidth / 8)}`);
-      this.pushVoid('b&');
+      this.pushLines(`byte 0x${'FF'.repeat(returnBitWidth / 8)}`, 'b&');
     }
 
-    this.pushVoid('byte 0x151f7c75');
-    this.pushVoid('swap');
-    this.pushVoid('concat');
-    this.pushVoid('log');
+    this.pushLines('byte 0x151f7c75', 'swap', 'concat', 'log');
   }
 
   private processBinaryExpression(node: ts.BinaryExpression) {
@@ -985,17 +942,13 @@ export default class Compiler {
 
         // Get new array
         this.processNode(node.right);
-        this.pushVoid('btoi');
-        this.pushVoid('loads');
+        this.pushLines('btoi', 'loads');
 
         // Replace old array with new array
         this.pushVoid('stores');
 
         // Decrement scratch slot
-        this.pushVoid('load 0');
-        this.pushVoid('int 1');
-        this.pushVoid('-');
-        this.pushVoid('store 0');
+        this.pushLines('load 0', 'int 1', '-', 'store 0');
         return;
       }
 
@@ -1003,8 +956,7 @@ export default class Compiler {
 
       // Get offset
       this.processNode(node.left.argumentExpression);
-      this.pushVoid(`int ${getTypeLength(type)}`);
-      this.pushVoid('*');
+      this.pushLines(`int ${getTypeLength(type)}`, '*');
 
       // Get new value
       this.processNode(node.right);
@@ -1049,14 +1001,12 @@ export default class Compiler {
       label = `skip_and${this.andCount}`;
       this.andCount += 1;
 
-      this.pushVoid('dup');
-      this.pushVoid(`bz ${label}`);
+      this.pushLines('dup', `bz ${label}`);
     } else if (node.operatorToken.getText() === '||') {
       label = `skip_or${this.orCount}`;
       this.orCount += 1;
 
-      this.pushVoid('dup');
-      this.pushVoid(`bnz ${label}`);
+      this.pushLines('dup', `bnz ${label}`);
     }
 
     this.processNode(node.right);
@@ -1099,8 +1049,7 @@ export default class Compiler {
       if (this.lastType === 'uint64') this.pushVoid('itob');
 
       if (lastBitWidth < typeBitWidth) {
-        this.pushVoid(`byte 0x${'FF'.repeat(typeBitWidth / 8)}`);
-        this.pushVoid('b&');
+        this.pushLines(`byte 0x${'FF'.repeat(typeBitWidth / 8)}`, 'b&');
       } else {
         this.pushVoid(`extract ${lastBitWidth / 8 - typeBitWidth / 8} 0`);
       }
@@ -1423,12 +1372,7 @@ export default class Compiler {
       return;
     }
 
-    this.pushVoid(`bare_route_${this.currentSubroutine.name}:`);
-    this.pushVoid('byte 0x');
-    this.pushVoid(`PENDING_DUPN: ${this.currentSubroutine.name}`);
-    this.pushVoid(`callsub ${this.currentSubroutine.name}`);
-    this.pushVoid('int 1');
-    this.pushVoid('return');
+    this.pushLines(`bare_route_${this.currentSubroutine.name}:`, 'byte 0x', `PENDING_DUPN: ${this.currentSubroutine.name}`, `callsub ${this.currentSubroutine.name}`, 'int 1', 'return');
 
     const predicates: string[] = [];
     allowedOnCompletes.forEach((oc, i) => {
@@ -1465,13 +1409,7 @@ export default class Compiler {
     this.pushVoid(`abi_route_${this.currentSubroutine.name}:`);
     const args: {name: string, type: string, desc: string}[] = [];
 
-    this.pushVoid('txn OnCompletion');
-    this.pushVoid('int NoOp');
-    this.pushVoid('==');
-    this.pushVoid('assert');
-
-    this.pushVoid('byte 0x');
-    this.pushVoid(`PENDING_DUPN: ${this.currentSubroutine.name}`);
+    this.pushLines('txn OnCompletion', 'int NoOp', '==', 'assert', 'byte 0x', `PENDING_DUPN: ${this.currentSubroutine.name}`);
 
     let nonTxnArgCount = argCount - fn.parameters.filter((p) => p.type?.getText().includes('Txn')).length + 1;
     let gtxnIndex = 0;
@@ -1499,34 +1437,30 @@ export default class Compiler {
       if (type === StackType.uint64) {
         this.pushVoid('btoi');
       } else if (isRefType(type)) {
-        this.pushVoid('btoi');
-        this.pushVoid(`txnas ${type}s`);
+        this.pushLines('btoi', `txnas ${type}s`);
       } else if (type.includes('Txn')) {
-        this.pushVoid('txn GroupIndex');
-        this.pushVoid(`int ${(gtxnIndex += 1)}`);
-        this.pushVoid('-');
+        this.pushLines('txn GroupIndex', `int ${(gtxnIndex += 1)}`, '-');
       } else if (type.endsWith('[]')) {
-        this.pushVoid('extract 2 0');
-        this.pushVoid('callsub unmarshal');
+        this.pushLines('extract 2 0', 'callsub unmarshal');
       } else if (type.startsWith('[')) {
         if (!ts.isTupleTypeNode(p.type)) throw Error('Invalid tuple type');
 
-        this.pushVoid('int 0');
-        this.pushVoid('store 1 // offset');
+        this.pushLines('int 0', 'store 1 // offset');
         p.type.elements.forEach((e, i) => {
           const text = e.getText();
 
-          this.pushVoid('dup');
-          this.pushVoid('load 1 // offset');
-          this.pushVoid(`int ${getTypeLength(text)}`);
-          this.pushVoid('extract3');
-          this.pushVoid('swap');
-
-          // incrementOffset
-          this.pushVoid('load 1 // offset');
-          this.pushVoid(`int ${getTypeLength(text)}`);
-          this.pushVoid('+');
-          this.pushVoid('store 1 // offset');
+          this.pushLines(
+            'dup',
+            'load 1 // offset',
+            `int ${getTypeLength(text)}`,
+            'extract3',
+            'swap',
+            // Increment offset
+            'load 1 // offset',
+            `int ${getTypeLength(text)}`,
+            '+',
+            'store 1 // offset',
+          );
         });
 
         this.pushVoid('pop');
@@ -1562,9 +1496,7 @@ export default class Compiler {
       returns: { type: returnType, desc: '' },
     });
 
-    this.pushVoid(`callsub ${this.currentSubroutine.name}`);
-    this.pushVoid('int 1');
-    this.pushVoid('return');
+    this.pushLines(`callsub ${this.currentSubroutine.name}`, 'int 1', 'return');
     this.processSubroutine(fn);
   }
 
@@ -1617,9 +1549,7 @@ export default class Compiler {
         break;
     }
 
-    this.pushVoid('itxn_begin');
-    this.pushVoid(`int ${txnType}`);
-    this.pushVoid('itxn_field TypeEnum');
+    this.pushLines('itxn_begin', `int ${txnType}`, 'itxn_field TypeEnum');
 
     if (!ts.isObjectLiteralExpression(node.arguments[0])) throw new Error('Transaction call argument must be an object');
 
@@ -1639,12 +1569,12 @@ export default class Compiler {
 
       const returnType = node.typeArguments![1].getText();
 
-      this.pushVoid(
+      this.pushLines(
         `method "${nameProp.initializer.text}(${argTypes
           .join(',')
           .toLowerCase()})${returnType.toLowerCase()}"`,
+        'itxn_field ApplicationArgs',
       );
-      this.pushVoid('itxn_field ApplicationArgs');
     }
 
     node.arguments[0].properties.forEach((p) => {
@@ -1661,8 +1591,7 @@ export default class Compiler {
 
       if (key === 'OnCompletion') {
         if (!ts.isPropertyAssignment(p) || !ts.isStringLiteral(p.initializer)) throw new Error('OnCompletion key must be a string');
-        this.pushVoid(`int ${p.initializer.text}`);
-        this.pushVoid('itxn_field OnCompletion');
+        this.pushLines(`int ${p.initializer.text}`, 'itxn_field OnCompletion');
       } else if (key === 'methodArgs') {
         if (node.typeArguments === undefined || !ts.isTupleTypeNode(node.typeArguments[0])) throw new Error('Transaction call type arguments[0] must be a tuple type');
         const argTypes = node.typeArguments[0].elements.map(
@@ -1678,21 +1607,15 @@ export default class Compiler {
         p.initializer.elements.forEach((e, i: number) => {
           if (argTypes[i] === ForeignType.Account) {
             this.processNode(e);
-            this.pushVoid('itxn_field Accounts');
-            this.pushVoid(`int ${accountIndex}`);
-            this.pushVoid('itob');
+            this.pushLines('itxn_field Accounts', `int ${accountIndex}`, 'itob');
             accountIndex += 1;
           } else if (argTypes[i] === ForeignType.Asset) {
             this.processNode(e);
-            this.pushVoid('itxn_field Assets');
-            this.pushVoid(`int ${assetIndex}`);
-            this.pushVoid('itob');
+            this.pushLines('itxn_field Assets', `int ${assetIndex}`, 'itob');
             assetIndex += 1;
           } else if (argTypes[i] === ForeignType.Application) {
             this.processNode(e);
-            this.pushVoid('itxn_field Applications');
-            this.pushVoid(`int ${appIndex}`);
-            this.pushVoid('itob');
+            this.pushLines('itxn_field Applications', `int ${appIndex}`, 'itob');
             appIndex += 1;
           } else if (argTypes[i] === StackType.uint64) {
             this.processNode(e);

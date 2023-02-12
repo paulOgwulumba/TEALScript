@@ -128,7 +128,7 @@ class AbiTest extends Contract {
     return a[1];
   }
 
-  staticTupleArg(a: [uint8, uint256, uint64]): uint64 {
-    return a[2];
+  staticTupleArg(a: [uint8, uint16]): uint16 {
+    return a[1];
   }
 }

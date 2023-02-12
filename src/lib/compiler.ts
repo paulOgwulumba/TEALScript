@@ -1444,17 +1444,18 @@ export default class Compiler {
         this.pushLines('extract 2 0', 'callsub unmarshal');
       } else if (type.startsWith('[')) {
         if (!ts.isTupleTypeNode(p.type)) throw Error('Invalid tuple type');
+        const argLine = `txna ApplicationArgs ${nonTxnArgCount}`;
 
+        this.teal.pop();
         this.pushLines('int 0', 'store 1 // offset');
         p.type.elements.forEach((e, i) => {
           const text = e.getText();
 
           this.pushLines(
-            'dup',
+            argLine,
             'load 1 // offset',
             `int ${getTypeLength(text)}`,
             'extract3',
-            'swap',
             // Increment offset
             'load 1 // offset',
             `int ${getTypeLength(text)}`,
@@ -1462,8 +1463,6 @@ export default class Compiler {
             'store 1 // offset',
           );
         });
-
-        this.pushVoid('pop');
 
         p.type.elements.map((t) => t.getText()).reverse().forEach((t) => {
           if (t === StackType.bytes) {

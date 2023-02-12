@@ -3,6 +3,7 @@
 /* eslint-disable max-classes-per-file */
 
 declare type uint64 = number
+declare type uint16 = number
 declare type uint8 = number
 declare type bytes = string
 declare type FixedArray<T, N extends number> = T[]

@@ -131,4 +131,8 @@ class AbiTest extends Contract {
   staticTupleArg(a: [uint8, uint16]): uint16 {
     return a[1];
   }
+
+  dynamicTupleArg(a: [uint8[], uint16[]]): uint16 {
+    return a[1][1];
+  }
 }

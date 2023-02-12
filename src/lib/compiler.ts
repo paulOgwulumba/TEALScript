@@ -4,6 +4,10 @@ import * as vlq from 'vlq';
 import ts, { isStringLiteral } from 'typescript';
 import * as langspec from '../langspec.json';
 
+function isDynamicType(type: ts.TypeNode) {
+  return ts.isArrayTypeNode(type) || ts.isTupleTypeNode(type);
+}
+
 function capitalizeFirstChar(str: string) {
   return `${str.charAt(0).toUpperCase() + str.slice(1)}`;
 }
@@ -1451,17 +1455,50 @@ export default class Compiler {
         p.type.elements.forEach((e, i) => {
           const text = e.getText();
 
-          this.pushLines(
-            argLine,
-            'load 1 // offset',
-            `int ${getTypeLength(text)}`,
-            'extract3',
-            // Increment offset
-            'load 1 // offset',
-            `int ${getTypeLength(text)}`,
-            '+',
-            'store 1 // offset',
-          );
+          if (isDynamicType(e)) {
+            this.pushLines(
+              argLine,
+              // get tail offset
+              'load 1 // offset',
+              'int 2',
+              'extract3',
+              'btoi // tail offset',
+              'dup',
+              'int 2 // add two for array extraction later',
+              '+',
+              'swap',
+              // get array length
+              argLine,
+              'swap',
+              'int 2',
+              'extract3',
+              'btoi // number of elements in array',
+              `int ${getTypeLength(text.replace('[]', ''))}`,
+              '*',
+              // extract array
+              argLine,
+              'cover 2',
+              'extract3',
+              'callsub unmarshal',
+              // increment offset,
+              'load 1 // offset',
+              'int 2',
+              '+',
+              'store 1 // offset',
+            );
+          } else {
+            this.pushLines(
+              argLine,
+              'load 1 // offset',
+              `int ${getTypeLength(text)}`,
+              'extract3',
+              // Increment offset
+              'load 1 // offset',
+              `int ${getTypeLength(text)}`,
+              '+',
+              'store 1 // offset',
+            );
+          }
         });
 
         p.type.elements.map((t) => t.getText()).reverse().forEach((t) => {

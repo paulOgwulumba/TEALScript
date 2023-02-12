@@ -112,4 +112,11 @@ describe('ABI', function () {
     const ret = await appClient.staticTupleArg({ a: [BigInt(11), BigInt(12)] });
     expect(ret.returnValue).to.equal(BigInt(12));
   });
+
+  it('dynamicTupleArg runtime', async function () {
+    const ret = await appClient.dynamicTupleArg(
+      { a: [[BigInt(11), BigInt(12)], [BigInt(13), BigInt(14)]] },
+    );
+    expect(ret.returnValue).to.equal(BigInt(14));
+  });
 });

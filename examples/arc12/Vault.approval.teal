@@ -103,9 +103,13 @@ abi_route_create:
 	assert
 	byte 0x
 	dupn 1
+
+	// sender: Account
 	txna ApplicationArgs 2
 	btoi
 	txnas Accounts
+
+	// receiver: Account
 	txna ApplicationArgs 1
 	btoi
 	txnas Accounts
@@ -142,15 +146,23 @@ abi_route_reject:
 	assert
 	byte 0x
 	dupn 3
+
+	// vaultCreator: Account
 	txna ApplicationArgs 4
 	btoi
 	txnas Accounts
+
+	// asa: Asset
 	txna ApplicationArgs 3
 	btoi
 	txnas Assets
+
+	// feeSink: Account
 	txna ApplicationArgs 2
 	btoi
 	txnas Accounts
+
+	// asaCreator: Account
 	txna ApplicationArgs 1
 	btoi
 	txnas Accounts
@@ -307,9 +319,13 @@ abi_route_optIn:
 	assert
 	byte 0x
 	dupn 2
+
+	// mbrPayment: PayTxn
 	txn GroupIndex
 	int 1
 	-
+
+	// asa: Asset
 	txna ApplicationArgs 1
 	btoi
 	txnas Assets
@@ -408,12 +424,18 @@ abi_route_claim:
 	assert
 	byte 0x
 	dupn 2
+
+	// asaMbrFunder: Account
 	txna ApplicationArgs 3
 	btoi
 	txnas Accounts
+
+	// creator: Account
 	txna ApplicationArgs 2
 	btoi
 	txnas Accounts
+
+	// asa: Asset
 	txna ApplicationArgs 1
 	btoi
 	txnas Assets

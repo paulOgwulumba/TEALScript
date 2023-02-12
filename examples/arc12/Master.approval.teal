@@ -45,9 +45,13 @@ abi_route_createVault:
 	assert
 	byte 0x
 	dupn 3
+
+	// mbrPayment: PayTxn
 	txn GroupIndex
 	int 1
 	-
+
+	// receiver: Account
 	txna ApplicationArgs 1
 	btoi
 	txnas Accounts
@@ -221,12 +225,18 @@ abi_route_verifyAxfer:
 	assert
 	byte 0x
 	dupn 1
+
+	// vault: Application
 	txna ApplicationArgs 2
 	btoi
 	txnas Applications
+
+	// vaultAxfer: AssetTransferTxn
 	txn GroupIndex
 	int 1
 	-
+
+	// receiver: Account
 	txna ApplicationArgs 1
 	btoi
 	txnas Accounts
@@ -281,6 +291,8 @@ abi_route_hasVault:
 	assert
 	byte 0x
 	dupn 1
+
+	// receiver: Account
 	txna ApplicationArgs 1
 	btoi
 	txnas Accounts
@@ -311,6 +323,8 @@ abi_route_getVaultId:
 	assert
 	byte 0x
 	dupn 1
+
+	// receiver: Account
 	txna ApplicationArgs 1
 	btoi
 	txnas Accounts
@@ -341,6 +355,8 @@ abi_route_getVaultAddr:
 	assert
 	byte 0x
 	dupn 1
+
+	// receiver: Account
 	txna ApplicationArgs 1
 	btoi
 	txnas Accounts
@@ -372,9 +388,13 @@ abi_route_deleteVault:
 	assert
 	byte 0x
 	dupn 3
+
+	// creator: Account
 	txna ApplicationArgs 2
 	btoi
 	txnas Accounts
+
+	// vault: Application
 	txna ApplicationArgs 1
 	btoi
 	txnas Applications

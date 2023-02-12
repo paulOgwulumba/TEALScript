@@ -1421,6 +1421,7 @@ export default class Compiler {
     new Array(...fn.parameters).reverse().forEach((p) => {
       if (p.type === undefined) throw new Error();
       const type = p.type.getText();
+      this.pushVoid(`// ${p.getText()}`);
       let abiType = type;
 
       if (type.includes('Txn')) {

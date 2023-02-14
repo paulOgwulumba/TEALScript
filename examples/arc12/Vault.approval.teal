@@ -606,7 +606,7 @@ delete:
 	retsub
 
 main:
-	int 2
+	int 1
 	store 0
 	txn NumAppArgs
 	bnz route_abi

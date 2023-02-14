@@ -550,7 +550,7 @@ export default class Compiler {
     });
 
     if (!this.teal.includes('main:')) {
-      this.pushLines('main:', 'int 2', 'store 0');
+      this.pushLines('main:', 'int 1', 'store 0');
       this.routeAbiMethods();
     }
 
@@ -1452,7 +1452,7 @@ export default class Compiler {
         const argLine = `txna ApplicationArgs ${nonTxnArgCount}`;
 
         this.teal.pop();
-        this.pushLines('int 0', 'store 1 // offset');
+        let offset = 0;
         p.type.elements.forEach((e, i) => {
           const text = e.getText();
 
@@ -1460,7 +1460,7 @@ export default class Compiler {
             this.pushLines(
               argLine,
               // get tail offset
-              'load 1 // offset',
+              `int ${offset}`,
               'int 2',
               'extract3',
               'btoi // tail offset',
@@ -1473,32 +1473,26 @@ export default class Compiler {
               'swap',
               'int 2',
               'extract3',
-              'btoi // number of elements in array',
+              'btoi // extract array len',
               `int ${getTypeLength(text.replace('[]', ''))}`,
               '*',
               // extract array
               argLine,
               'cover 2',
-              'extract3',
+              'extract3 // extract array',
               'callsub unmarshal',
-              // increment offset,
-              'load 1 // offset',
-              'int 2',
-              '+',
-              'store 1 // offset',
             );
+
+            offset += 2;
           } else {
             this.pushLines(
               argLine,
-              'load 1 // offset',
+              `int ${offset}`,
               `int ${getTypeLength(text)}`,
               'extract3',
-              // Increment offset
-              'load 1 // offset',
-              `int ${getTypeLength(text)}`,
-              '+',
-              'store 1 // offset',
             );
+
+            offset += getTypeLength(text);
           }
         });
 

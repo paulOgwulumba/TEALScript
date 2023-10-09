@@ -1018,3 +1018,14 @@ class ABITestNestedObjectArray extends Contract {
     return o.foo.bar[1];
   }
 }
+
+class ABITestNestedObjectArrayInState extends Contract {
+  gMap = GlobalStateMap<bytes, T2>({ maxKeys: 1 });
+
+  nestedObjectArrayInState(): uint<8> {
+    this.gMap('foo').value = { foo: { bar: [1, 2] } };
+    this.gMap('foo').value.foo.bar[1] = 3;
+
+    return this.gMap('foo').value.foo.bar[1];
+  }
+}

@@ -500,7 +500,11 @@ export default class Compiler {
       this.pushVoid(node.expression, `frame_dig ${this.frame[storageKeyFrame].index} // ${storageKeyFrame}`);
     } else {
       if (prefix) this.pushVoid(keyNode!, `byte "${prefix}"`);
+
+      const oldTypeHint = this.typeHint;
+      this.typeHint = keyType;
       this.processNode(keyNode!);
+      this.typeHint = oldTypeHint;
 
       if (keyType !== StackType.bytes) {
         this.checkEncoding(keyNode!, this.lastType);
@@ -2299,11 +2303,45 @@ export default class Compiler {
           action: 'set',
         });
       } else if (ts.isPropertyAccessExpression(node)) {
+        // TODO: This needs to be refactored
         const name = node.getText().split('.')[0];
-        // This is an array
-        // console.log(node.getText());
-        const { index, type } = this.frame[name];
-        this.pushVoid(node, `frame_bury ${index} // ${name}: ${type}`);
+
+        const getStorageExpression = (
+          n: ts.PropertyAccessExpression | ts.CallExpression | ts.ElementAccessExpression,
+        ): ts.PropertyAccessExpression => {
+          const expr = n.expression;
+
+          if (ts.isPropertyAccessExpression(expr) && this.storageProps[expr.name.getText()]) {
+            return n as ts.PropertyAccessExpression;
+          }
+
+          if (
+            ts.isCallExpression(expr)
+            && ts.isPropertyAccessExpression(expr.expression)
+            && this.storageProps[expr.expression.name.getText()]
+          ) {
+            return n as ts.PropertyAccessExpression;
+          }
+
+          if (ts.isPropertyAccessExpression(expr)) {
+            return getStorageExpression(expr);
+          }
+
+          throw Error(n.getText());
+        };
+
+        if (name === 'this') {
+          const storageExpr = getStorageExpression(node);
+
+          this.handleStorageAction({
+            node: storageExpr,
+            name: getStorageName(storageExpr)!,
+            action: 'set',
+          });
+        } else {
+          const { index, type } = this.frame[name];
+          this.pushVoid(node, `frame_bury ${index} // ${name}: ${type}`);
+        }
       }
     } else {
       throw new Error(`Can't update ${ts.SyntaxKind[node.kind]} array`);

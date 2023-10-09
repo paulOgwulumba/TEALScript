@@ -726,4 +726,10 @@ describe('ABI', function () {
 
     expect(await runMethod(appClient, 'nestedObjectArray')).toEqual(3n);
   });
+
+  test('nestedObjectArrayInState', async () => {
+    const { appClient } = await compileAndCreate('nestedObjectArrayInState');
+
+    expect(await runMethod(appClient, 'nestedObjectArrayInState')).toEqual(3n);
+  });
 });

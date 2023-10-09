@@ -1008,3 +1008,13 @@ class ABITestGlobalMethodInChain extends Contract {
     return castBytes<T1>(hex('0x00')).bar;
   }
 }
+
+type T2 = { foo: { bar: StaticArray<uint<8>, 2> } }
+class ABITestNestedObjectArray extends Contract {
+  nestedObjectArray(): uint<8> {
+    const o: T2 = { foo: { bar: [1, 2] } };
+    o.foo.bar[1] = 3;
+
+    return o.foo.bar[1];
+  }
+}

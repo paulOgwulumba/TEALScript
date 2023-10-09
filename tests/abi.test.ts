@@ -720,4 +720,10 @@ describe('ABI', function () {
 
     expect(await runMethod(appClient, 'globalMethodInChain')).toEqual(0n);
   });
+
+  test('nestedObjectArray', async () => {
+    const { appClient } = await compileAndCreate('nestedObjectArray');
+
+    expect(await runMethod(appClient, 'nestedObjectArray')).toEqual(3n);
+  });
 });

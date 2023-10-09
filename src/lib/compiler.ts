@@ -2292,11 +2292,19 @@ export default class Compiler {
         storageName = getStorageName(node.expression);
       } else storageName = getStorageName(node);
 
-      this.handleStorageAction({
-        node,
-        name: storageName!,
-        action: 'set',
-      });
+      if (storageName && this.storageProps[storageName]) {
+        this.handleStorageAction({
+          node,
+          name: storageName,
+          action: 'set',
+        });
+      } else if (ts.isPropertyAccessExpression(node)) {
+        const name = node.getText().split('.')[0];
+        // This is an array
+        // console.log(node.getText());
+        const { index, type } = this.frame[name];
+        this.pushVoid(node, `frame_bury ${index} // ${name}: ${type}`);
+      }
     } else {
       throw new Error(`Can't update ${ts.SyntaxKind[node.kind]} array`);
     }

@@ -16,7 +16,6 @@
     "test-coverage": "jest --coverage tests/",
     "lint": "eslint examples/ src/ tests/ --ext .ts",
     "fix": "eslint --fix examples/ src/ tests/ --ext .ts",
-    "docs": "typedoc",
     "prepack": "tsc && cp src/langspec.json dist/langspec.json && cp src/lib/index.ts dist/lib/index.ts && cp src/lib/contract.ts dist/lib/contract.ts",
     "compile-abi": "bun ./src/bin/tealscript.ts --unsafe-disable-typescript tests/contracts/abi.algo.ts tests/contracts/artifacts",
     "compile-account": "bun ./src/bin/tealscript.ts --unsafe-disable-typescript tests/contracts/account.algo.ts tests/contracts/artifacts",
@@ -64,7 +63,6 @@
     "@algorandfoundation/algokit-client-generator": "^2.2.1",
     "@algorandfoundation/algokit-utils": "^2.1.0",
     "@jest/globals": "^29.5.0",
-    "@knodes/typedoc-plugin-pages": "^0.23.1",
     "@types/argparse": "^2.0.11",
     "@types/node": "^18.11.9",
     "@types/node-fetch": "^2.6.2",
@@ -83,8 +81,6 @@
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.4.4",
     "ts-node": "^10.9.1",
-    "typedoc": "^0.23.23",
-    "typedoc-plugin-merge-modules": "^4.0.1",
     "webpack": "^5.88.1",
     "webpack-cli": "^5.1.4"
   }
